@@ -19,10 +19,10 @@ public class ClientTCP {
 
     private void performCommand(String command, String fileName) {
         try {
-            switch(command) {
-                // TODO: Add the rest of the commands here.
-                case DELETE -> deleteFile(fileName);
-                default -> System.out.println("Not a valid command.");
+            if (DELETE.equals(command)) {
+                deleteFile(fileName);
+            } else {
+                System.out.println("Not a valid command.");
             }
         } catch(IOException e) {
             e.printStackTrace();
@@ -34,5 +34,15 @@ public class ClientTCP {
         sc.connect(new InetSocketAddress("10.222.18.133", 4269));
         sc.write(new ByteBuffer[] {ByteBuffer.wrap(DELETE.getBytes()), ByteBuffer.wrap(fileName.getBytes())});
         sc.shutdownOutput();
+        ByteBuffer buffer = ByteBuffer.allocate(400);
+        sc.read(buffer);
+        sc.close();
+        printResponse(buffer);
+    }
+
+    private void printResponse(ByteBuffer buffer) {
+        buffer.flip();
+        byte[] response = buffer.array();
+        System.out.println(new String(response));
     }
 }
