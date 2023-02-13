@@ -7,9 +7,10 @@ import java.nio.channels.SocketChannel;
 
 public class ClientTCP {
     private static final String DELETE = "del";
+
     public static void main(String[] args) {
         if(args.length != 2) {
-            System.out.println("Syntax: ClientTCP <Command> (<FileName>)");
+            System.out.println("Syntax: ClientTCP <Command> <FileName>");
             return;
         }
         ClientTCP clientTCP = new ClientTCP();
@@ -29,11 +30,9 @@ public class ClientTCP {
     }
 
     private void deleteFile(String fileName) throws IOException {
-        ByteBuffer commandData = ByteBuffer.wrap(DELETE.getBytes());
-        ByteBuffer fileNameData = ByteBuffer.wrap(fileName.getBytes());
         SocketChannel sc = SocketChannel.open();
         sc.connect(new InetSocketAddress("10.222.18.133", 4269));
-        sc.write(new ByteBuffer[]{commandData, fileNameData});
+        sc.write(new ByteBuffer[] {ByteBuffer.wrap(DELETE.getBytes()), ByteBuffer.wrap(fileName.getBytes())});
         sc.shutdownOutput();
     }
 }
