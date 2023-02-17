@@ -8,7 +8,7 @@ import java.util.Scanner;
 
 public class ClientTCP {
     private static final String DOWNLOAD = "dL";
-    private static final String DELETE = "del";
+    private static final String DELETE = "d";
 
     public static void main(String[] args) {
         if(args.length != 1) {
@@ -32,10 +32,10 @@ public class ClientTCP {
     }
 
     private void deleteFile() throws IOException {
-        String fileName = promptUserForFileName();
+        String getOutput = DELETE + promptUserForFileName();
         SocketChannel sc = SocketChannel.open();
         sc.connect(new InetSocketAddress("10.222.18.133", 4269));
-        sc.write(new ByteBuffer[] {ByteBuffer.wrap(DELETE.getBytes()), ByteBuffer.wrap(fileName.getBytes())});
+        sc.write(ByteBuffer.wrap(getOutput.getBytes()));
         sc.shutdownOutput();
         ByteBuffer buffer = getServerResponse(sc);
         printResponse(buffer);
