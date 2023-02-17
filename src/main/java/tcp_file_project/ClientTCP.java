@@ -32,10 +32,10 @@ public class ClientTCP {
     }
 
     private void deleteFile() throws IOException {
-        String getOutput = DELETE + promptUserForFileName();
+        String output = DELETE + promptUserForFileName();
         SocketChannel sc = SocketChannel.open();
         sc.connect(new InetSocketAddress("10.222.18.133", 4269));
-        sc.write(ByteBuffer.wrap(getOutput.getBytes()));
+        sc.write(ByteBuffer.wrap(output.getBytes()));
         sc.shutdownOutput();
         ByteBuffer buffer = getServerResponse(sc);
         printResponse(buffer);
