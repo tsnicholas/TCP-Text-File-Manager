@@ -40,20 +40,22 @@ public class ServerTCP {
 
     private void performCommand(String messageToRead) {
 
-        try {
-            String command = String.valueOf(messageToRead.charAt(0));
-            String fileName = messageToRead.substring(1);
-            switch(command) {
-                case "d" -> deleteFile(fileName);
-                default -> System.out.println("Not a valid command.");
-            }
-        } catch(IOException e) {
-            e.printStackTrace();
+        String command = String.valueOf(messageToRead.charAt(0));
+        String fileName = messageToRead.substring(1);
+        switch(command) {
+            case "d" -> deleteFile(fileName);
+            case "D" -> System.out.println("Feature not Available yet");
+            default -> System.out.println("Not a valid command.");
         }
 
     }
 
     private void deleteFile(String fileName) {
         File file = new File(fileName);
+        if (file.delete()) {
+            System.out.println("Deleted the file: " + file.getName());
+        } else {
+            System.out.println("Failed to delete the file.");
+        }
     }
 }
