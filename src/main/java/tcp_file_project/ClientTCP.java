@@ -9,39 +9,47 @@ import java.util.Scanner;
 public class ClientTCP {
     private static final String DOWNLOAD = "D";
     private static final String DELETE = "d";
+    private static SocketChannel sc;
 
     public static void main(String[] args) {
-        if(args.length != 1) {
-            System.out.println("Syntax: ClientTCP <Command>");
+        if(args.length != 2) {
+            System.out.println("Syntax: ClientTCP <IP Address> <Port Number>");
             return;
         }
-        ClientTCP clientTCP = new ClientTCP();
-        clientTCP.performCommand(args[0]);
-    }
-
-    private void performCommand(String command) {
         try {
-            switch(command) {
-                case DELETE -> deleteFile();
-                case DOWNLOAD -> System.out.println("Command not available yet.");
-                default -> System.out.println("Not a valid command.");
-            }
+            ClientTCP clientTCP = new ClientTCP();
+            sc = SocketChannel.open();
+            sc.connect(new InetSocketAddress(args[0], Integer.parseInt(args[1])));
+            String command = clientTCP.getCommand();
+            clientTCP.performCommand(command);
         } catch(IOException e) {
             e.printStackTrace();
         }
     }
 
+    private String getCommand() {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Enter your command: ");
+        return scanner.nextLine();
+    }
+
+    private void performCommand(String command) throws IOException {
+        switch(command) {
+            case DELETE -> deleteFile();
+            case DOWNLOAD -> System.out.println("Command not available yet.");
+            default -> System.out.println("Not a valid command.");
+        }
+    }
+
     private void deleteFile() throws IOException {
-        String output = DELETE + promptUserForFileName();
-        SocketChannel sc = SocketChannel.open();
-        sc.connect(new InetSocketAddress("10.222.18.133", 4269));
+        String output = DELETE + getFileName();
         sc.write(ByteBuffer.wrap(output.getBytes()));
         sc.shutdownOutput();
         ByteBuffer buffer = getServerResponse(sc);
         printResponse(buffer);
     }
 
-    private String promptUserForFileName() {
+    private String getFileName() {
         Scanner scanner = new Scanner(System.in);
         System.out.println("Enter the file name: ");
         return scanner.nextLine();
