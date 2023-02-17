@@ -7,7 +7,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Scanner;
 
 public class ClientTCP {
-    private static final String DOWNLOAD = "dL";
+    private static final String DOWNLOAD = "D";
     private static final String DELETE = "d";
 
     public static void main(String[] args) {
