@@ -38,9 +38,7 @@ public class ClientTCP {
         sc.write(new ByteBuffer[] {ByteBuffer.wrap(DELETE.getBytes()), ByteBuffer.wrap(fileName.getBytes())});
         sc.shutdownOutput();
         // Get response from server side.
-        ByteBuffer buffer = ByteBuffer.allocate(400);
-        sc.read(buffer);
-        sc.close();
+        ByteBuffer buffer = getServerResponse(sc);
         printResponse(buffer);
     }
 
@@ -48,6 +46,13 @@ public class ClientTCP {
         Scanner scanner = new Scanner(System.in);
         System.out.println("Enter the file name: ");
         return scanner.nextLine();
+    }
+
+    private ByteBuffer getServerResponse(SocketChannel sc) throws IOException {
+        ByteBuffer buffer = ByteBuffer.allocate(400);
+        sc.read(buffer);
+        sc.close();
+        return buffer;
     }
 
     private void printResponse(ByteBuffer buffer) {
