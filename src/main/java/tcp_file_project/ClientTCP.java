@@ -37,7 +37,6 @@ public class ClientTCP {
         sc.connect(new InetSocketAddress("10.222.18.133", 4269));
         sc.write(new ByteBuffer[] {ByteBuffer.wrap(DELETE.getBytes()), ByteBuffer.wrap(fileName.getBytes())});
         sc.shutdownOutput();
-        // Get response from server side.
         ByteBuffer buffer = getServerResponse(sc);
         printResponse(buffer);
     }
