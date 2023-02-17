@@ -65,6 +65,11 @@ public class ClientTCP {
     private void printResponse(ByteBuffer buffer) {
         buffer.flip();
         byte[] response = buffer.array();
-        System.out.println(new String(response));
+        String letter = new String(response);
+        switch(letter) {
+            case "S" -> System.out.println("Operation Successful.");
+            case "F" -> System.out.println("Operation Failed.");
+            default -> System.out.println("Unknown response from server.");
+        }
     }
 }
