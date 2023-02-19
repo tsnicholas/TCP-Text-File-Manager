@@ -8,6 +8,8 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
 public class ServerTCP {
+    private SocketChannel serveChannel;
+
     public static void main(String[] args) {
         if (args.length != 1){
             System.out.println("Usage: ServerTCP <port>");
@@ -27,37 +29,56 @@ public class ServerTCP {
     @SuppressWarnings("InfiniteLoopStatement")
     private void startService(ServerSocketChannel listenChannel) throws IOException {
         while(true) {
-            SocketChannel serveChannel = listenChannel.accept();
-            ByteBuffer buffer = ByteBuffer.allocate(1024);
-            serveChannel.read(buffer);
-            buffer.flip();
-            byte[] bytes = buffer.array();
-            String messageToRead = new String(bytes);
+            serveChannel = listenChannel.accept();
+            ByteBuffer buffer = getRequest();
+            String messageToRead = convertBytesToString(buffer);
             System.out.println(messageToRead);
-            buffer.rewind();
-            ServerTCP server = new ServerTCP();
-            server.performCommand(messageToRead);
-            serveChannel.write(buffer);
+            fulfillRequest(messageToRead);
             serveChannel.close();
         }
     }
 
-    private void performCommand(String messageToRead) {
-        String command = String.valueOf(messageToRead.charAt(0));
+    private ByteBuffer getRequest() throws IOException {
+        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        serveChannel.read(buffer);
+        buffer.flip();
+        return buffer;
+    }
+
+    private String convertBytesToString(ByteBuffer buffer) {
+        byte[] bytes = buffer.array();
+        return new String(bytes);
+    }
+
+    private void fulfillRequest(String messageToRead) throws IOException {
+        ByteBuffer buffer;
+        try {
+            performCommand(messageToRead);
+            buffer = ByteBuffer.wrap("S".getBytes());
+        } catch(NullPointerException e) {
+            buffer = ByteBuffer.wrap("F".getBytes());
+        }
+        serveChannel.write(buffer);
+    }
+
+    private void performCommand(String messageToRead) throws NullPointerException {
+        char command = messageToRead.charAt(0);
         String fileName = messageToRead.substring(1);
         switch(command) {
-            case "d" -> deleteFile(fileName);
-            case "D" -> System.out.println("Feature not Available yet");
+            case 'd' -> deleteFile(fileName);
+            case 'D' -> System.out.println("Feature not Available yet");
             default -> System.out.println("Not a valid command.");
         }
     }
 
-    private void deleteFile(String fileName) {
+    private void deleteFile(String fileName) throws NullPointerException {
         File file = new File(fileName);
         if (file.delete()) {
             System.out.println("Deleted the file: " + file.getName());
         } else {
             System.out.println("Failed to delete the file.");
+            // While not really a NullPointerException, still need to let the client know the request failed.
+            throw new NullPointerException();
         }
     }
 }
