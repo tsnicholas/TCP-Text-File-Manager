@@ -8,16 +8,25 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
 public class ServerTCP {
-    @SuppressWarnings("InfiniteLoopStatement")
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         if (args.length != 1){
             System.out.println("Usage: ServerTCP <port>");
             return;
         }
-        int port = Integer.parseInt(args[0]);
-        ServerSocketChannel listenChannel = ServerSocketChannel.open();
-        listenChannel.bind(new InetSocketAddress(port));
-        while(true){
+        try {
+            int port = Integer.parseInt(args[0]);
+            ServerSocketChannel listenChannel = ServerSocketChannel.open();
+            listenChannel.bind(new InetSocketAddress(port));
+            ServerTCP serverTCP = new ServerTCP();
+            serverTCP.startService(listenChannel);
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @SuppressWarnings("InfiniteLoopStatement")
+    private void startService(ServerSocketChannel listenChannel) throws IOException {
+        while(true) {
             SocketChannel serveChannel = listenChannel.accept();
             ByteBuffer buffer = ByteBuffer.allocate(1024);
             serveChannel.read(buffer);
@@ -31,7 +40,6 @@ public class ServerTCP {
             serveChannel.write(buffer);
             serveChannel.close();
         }
-
     }
 
     private void performCommand(String messageToRead) {
