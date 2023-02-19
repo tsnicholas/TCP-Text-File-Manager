@@ -8,17 +8,15 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
 public class ServerTCP {
+    @SuppressWarnings("InfiniteLoopStatement")
     public static void main(String[] args) throws IOException {
         if (args.length != 1){
             System.out.println("Usage: ServerTCP <port>");
             return;
         }
         int port = Integer.parseInt(args[0]);
-
         ServerSocketChannel listenChannel = ServerSocketChannel.open();
-
         listenChannel.bind(new InetSocketAddress(port));
-
         while(true){
             SocketChannel serveChannel = listenChannel.accept();
             ByteBuffer buffer = ByteBuffer.allocate(1024);
@@ -28,10 +26,8 @@ public class ServerTCP {
             String messageToRead = new String(bytes);
             System.out.println(messageToRead);
             buffer.rewind();
-
             ServerTCP server = new ServerTCP();
             server.performCommand(messageToRead);
-
             serveChannel.write(buffer);
             serveChannel.close();
         }
@@ -39,7 +35,6 @@ public class ServerTCP {
     }
 
     private void performCommand(String messageToRead) {
-
         String command = String.valueOf(messageToRead.charAt(0));
         String fileName = messageToRead.substring(1);
         switch(command) {
@@ -47,7 +42,6 @@ public class ServerTCP {
             case "D" -> System.out.println("Feature not Available yet");
             default -> System.out.println("Not a valid command.");
         }
-
     }
 
     private void deleteFile(String fileName) {
