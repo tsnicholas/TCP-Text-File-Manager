@@ -32,7 +32,6 @@ public class ServerTCP {
             serveChannel = listenChannel.accept();
             ByteBuffer buffer = getRequest();
             String messageToRead = convertBytesToString(buffer);
-            System.out.println(messageToRead);
             fulfillRequest(messageToRead);
             serveChannel.close();
         }
@@ -47,7 +46,9 @@ public class ServerTCP {
 
     private String convertBytesToString(ByteBuffer buffer) {
         byte[] bytes = buffer.array();
-        return new String(bytes);
+        String input = new String(bytes);
+        // Remove null bytes in the string.
+        return input.replace("\0", "");
     }
 
     private void fulfillRequest(String messageToRead) throws IOException {
@@ -73,11 +74,16 @@ public class ServerTCP {
 
     private void deleteFile(String fileName) throws NullPointerException {
         File file = new File(fileName);
-        if (file.delete()) {
-            System.out.println("Deleted the file: " + file.getName());
+        if(file.exists()) {
+            if (file.delete()) {
+                System.out.println("Deleted the file: " + file.getName());
+            } else {
+                System.out.println("Failed to delete the file.");
+                // While not really a NullPointerException, still need to let the client know the request failed.
+                throw new NullPointerException();
+            }
         } else {
-            System.out.println("Failed to delete the file.");
-            // While not really a NullPointerException, still need to let the client know the request failed.
+            System.out.println("File doesn't exist.");
             throw new NullPointerException();
         }
     }
