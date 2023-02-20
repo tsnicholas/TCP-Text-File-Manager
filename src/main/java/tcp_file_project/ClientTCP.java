@@ -42,31 +42,25 @@ public class ClientTCP {
     }
 
     private void deleteFile() throws IOException {
-        String output = DELETE + getFileName();
-        sc.write(ByteBuffer.wrap(output.getBytes()));
+        String output = DELETE + promptUser("Enter file name: ");
+        sc.write(new ByteBuffer[]{ByteBuffer.wrap(output.getBytes())});
         sc.shutdownOutput();
         ByteBuffer buffer = getServerResponse();
         printResponse(buffer);
     }
 
     private void renameFile() throws IOException {
-        String output = RENAME + getFileName();
-        String rename = getRename();
+        String output = RENAME + promptUser("Enter file name: ");
+        String rename = promptUser("Rename file to: ");
         sc.write(new ByteBuffer[]{ByteBuffer.wrap(output.getBytes()), ByteBuffer.wrap(rename.getBytes())});
         sc.shutdownOutput();
         ByteBuffer buffer = getServerResponse();
         printResponse(buffer);
     }
 
-    private String getFileName() {
+    private String promptUser(String prompt) {
         Scanner scanner = new Scanner(System.in);
-        System.out.println("Enter the file name: ");
-        return scanner.nextLine();
-    }
-
-    private String getRename() {
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("Rename: ");
+        System.out.println(prompt);
         return scanner.nextLine();
     }
 
