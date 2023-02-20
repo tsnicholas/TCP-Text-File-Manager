@@ -68,7 +68,20 @@ public class ServerTCP {
         switch(command) {
             case 'd' -> deleteFile(fileName);
             case 'D' -> System.out.println("Feature not Available yet");
+            case 'r' -> renameFile(fileName);
             default -> System.out.println("Not a valid command.");
+        }
+    }
+
+    private void renameFile(String fileName) {
+        String[] arrOfStr = fileName.split("%",1);
+        File oldName = new File(arrOfStr[0]);
+        File newName = new File(arrOfStr[1]);
+        boolean flag = oldName.renameTo(newName);
+        if (flag){
+            System.out.println("File Rename Successful");
+        } else {
+            System.out.println("Rename Failed");
         }
     }
 
