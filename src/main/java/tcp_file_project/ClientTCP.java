@@ -7,7 +7,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Scanner;
 
 public class ClientTCP {
-    private static final String DOWNLOAD = "D";
+    private static final String RENAME = "r";
     private static final String DELETE = "d";
     private static SocketChannel sc;
 
@@ -36,7 +36,7 @@ public class ClientTCP {
     private void performCommand(String command) throws IOException {
         switch(command) {
             case DELETE -> deleteFile();
-            case DOWNLOAD -> System.out.println("Command not available yet.");
+            case RENAME -> renameFile();
             default -> System.out.println("Not a valid command.");
         }
     }
@@ -49,9 +49,24 @@ public class ClientTCP {
         printResponse(buffer);
     }
 
+    private void renameFile() throws IOException {
+        String output = RENAME + getFileName();
+        String rename = getRename();
+        sc.write(new ByteBuffer[]{ByteBuffer.wrap(output.getBytes()), ByteBuffer.wrap(rename.getBytes())});
+        sc.shutdownOutput();
+        ByteBuffer buffer = getServerResponse();
+        printResponse(buffer);
+    }
+
     private String getFileName() {
         Scanner scanner = new Scanner(System.in);
         System.out.println("Enter the file name: ");
+        return scanner.nextLine();
+    }
+
+    private String getRename() {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Rename: ");
         return scanner.nextLine();
     }
 
