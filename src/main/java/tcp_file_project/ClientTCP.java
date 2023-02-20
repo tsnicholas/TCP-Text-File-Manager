@@ -45,7 +45,7 @@ public class ClientTCP {
         String output = DELETE + getFileName();
         sc.write(ByteBuffer.wrap(output.getBytes()));
         sc.shutdownOutput();
-        ByteBuffer buffer = getServerResponse(sc);
+        ByteBuffer buffer = getServerResponse();
         printResponse(buffer);
     }
 
@@ -55,7 +55,7 @@ public class ClientTCP {
         return scanner.nextLine();
     }
 
-    private ByteBuffer getServerResponse(SocketChannel sc) throws IOException {
+    private ByteBuffer getServerResponse() throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(400);
         sc.read(buffer);
         sc.close();
@@ -65,10 +65,10 @@ public class ClientTCP {
     private void printResponse(ByteBuffer buffer) {
         buffer.flip();
         byte[] response = buffer.array();
-        String letter = new String(response);
-        switch(letter) {
-            case "S" -> System.out.println("Operation Successful.");
-            case "F" -> System.out.println("Operation Failed.");
+        char responseCode = new String(response).charAt(0);
+        switch(responseCode) {
+            case 'S' -> System.out.println("Operation Successful.");
+            case 'F' -> System.out.println("Operation Failed.");
             default -> System.out.println("Unknown response from server.");
         }
     }
