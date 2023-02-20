@@ -9,6 +9,7 @@ import java.util.Scanner;
 public class ClientTCP {
     private static final String RENAME = "r";
     private static final String DELETE = "d";
+    private static final String TERM = "%";
     private static SocketChannel sc;
 
     public static void main(String[] args) {
@@ -42,17 +43,16 @@ public class ClientTCP {
     }
 
     private void deleteFile() throws IOException {
-        sc.write(new ByteBuffer[]{ByteBuffer.wrap(DELETE.getBytes()),
-                ByteBuffer.wrap(promptUser("Enter file name: ").getBytes())});
+        String output = DELETE + promptUser("Enter file name: ");
+        sc.write(ByteBuffer.wrap(output.getBytes()));
         sc.shutdownOutput();
         ByteBuffer buffer = getServerResponse();
         printResponse(buffer);
     }
 
     private void renameFile() throws IOException {
-        sc.write(new ByteBuffer[]{ByteBuffer.wrap(RENAME.getBytes()),
-                ByteBuffer.wrap(promptUser("Enter file name: ").getBytes()),
-                ByteBuffer.wrap(promptUser("Rename file to: ").getBytes())});
+        String output = RENAME + promptUser("Enter File name: ") + TERM + promptUser("Rename file to: ");
+        sc.write(ByteBuffer.wrap(output.getBytes()));
         sc.shutdownOutput();
         ByteBuffer buffer = getServerResponse();
         printResponse(buffer);
