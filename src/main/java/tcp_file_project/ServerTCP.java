@@ -9,9 +9,10 @@ import java.nio.channels.SocketChannel;
 
 public class ServerTCP {
     private SocketChannel serveChannel;
+    private File serverDirectory;
 
     public static void main(String[] args) {
-        if (args.length != 1){
+        if (args.length != 1) {
             System.out.println("Usage: ServerTCP <port>");
             return;
         }
@@ -20,9 +21,22 @@ public class ServerTCP {
             ServerSocketChannel listenChannel = ServerSocketChannel.open();
             listenChannel.bind(new InetSocketAddress(port));
             ServerTCP serverTCP = new ServerTCP();
+            serverTCP.createDirectory();
             serverTCP.startService(listenChannel);
         } catch(IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void createDirectory() {
+        String dir = System.getProperty("user.dir");
+        serverDirectory = new File(dir + "\\ServerDirectory");
+        if(!serverDirectory.exists()) {
+            if(serverDirectory.mkdir()) {
+                System.out.println("Directory successfully created!");
+            } else {
+                System.out.println("Failed to create directory!");
+            }
         }
     }
 
@@ -73,20 +87,8 @@ public class ServerTCP {
         }
     }
 
-    private void renameFile(String fileName) {
-        String[] arrOfStr = fileName.split("%",1);
-        File oldName = new File(arrOfStr[0]);
-        File newName = new File(arrOfStr[1]);
-        boolean flag = oldName.renameTo(newName);
-        if (flag){
-            System.out.println("File Rename Successful");
-        } else {
-            System.out.println("Rename Failed");
-        }
-    }
-
     private void deleteFile(String fileName) throws NullPointerException {
-        File file = new File(fileName);
+        File file = new File(serverDirectory.getAbsolutePath() + fileName);
         if(file.exists()) {
             if (file.delete()) {
                 System.out.println("Deleted the file: " + file.getName());
@@ -97,6 +99,19 @@ public class ServerTCP {
             }
         } else {
             System.out.println("File doesn't exist.");
+            throw new NullPointerException();
+        }
+    }
+
+    private void renameFile(String fileName) throws NullPointerException {
+        String[] arrOfStr = fileName.split("%",1);
+        File oldName = new File(serverDirectory.getAbsolutePath() + arrOfStr[0]);
+        File newName = new File(serverDirectory.getAbsolutePath() + arrOfStr[1]);
+        if (oldName.renameTo(newName)) {
+            System.out.println("File Rename Successful");
+        } else {
+            System.out.println("Rename Failed");
+            // Once again, we have let the client know the operation failed.
             throw new NullPointerException();
         }
     }
