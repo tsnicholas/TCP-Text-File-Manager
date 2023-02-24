@@ -9,7 +9,8 @@ import java.util.Scanner;
 public class ClientTCP {
     private static final String RENAME = "r";
     private static final String DELETE = "d";
-    private static final String TERM = "%";
+    private static final String LIST = "l";
+    private static final String SEPARATOR = "%";
     private static SocketChannel sc;
 
     public static void main(String[] args) {
@@ -38,6 +39,7 @@ public class ClientTCP {
         switch(command) {
             case DELETE -> deleteFile();
             case RENAME -> renameFile();
+            case LIST -> listFile();
             default -> System.out.println("Not a valid command.");
         }
     }
@@ -51,11 +53,18 @@ public class ClientTCP {
     }
 
     private void renameFile() throws IOException {
-        String output = RENAME + promptUser("Enter File name: ") + TERM + promptUser("Rename file to: ");
+        String output = RENAME + promptUser("Enter File name: ") + SEPARATOR + promptUser("Rename file to: ");
         sc.write(ByteBuffer.wrap(output.getBytes()));
         sc.shutdownOutput();
         ByteBuffer buffer = getServerResponse();
         printResponse(buffer);
+    }
+
+    private void listFile() throws IOException {
+        sc.write(ByteBuffer.wrap(LIST.getBytes()));
+        sc.shutdownOutput();
+        ByteBuffer buffer = getServerResponse();
+        printFileList(buffer);
     }
 
     private String promptUser(String prompt) {
@@ -80,5 +89,11 @@ public class ClientTCP {
             case 'F' -> System.out.println("Operation Failed.");
             default -> System.out.println("Unknown response from server.");
         }
+    }
+
+    private void printFileList(ByteBuffer buffer) {
+        buffer.flip();
+        byte[] list = buffer.array();
+        System.out.println(new String(list));
     }
 }
