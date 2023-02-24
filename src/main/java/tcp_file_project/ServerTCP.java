@@ -1,7 +1,6 @@
 package tcp_file_project;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
@@ -76,15 +75,35 @@ public class ServerTCP {
         serveChannel.write(buffer);
     }
 
-    private void performCommand(String messageToRead) throws NullPointerException {
+    private void performCommand(String messageToRead) throws NullPointerException, IOException {
         char command = messageToRead.charAt(0);
         String fileName = messageToRead.substring(1);
         switch(command) {
             case 'd' -> deleteFile(fileName);
             case 'D' -> System.out.println("Feature not Available yet");
             case 'r' -> renameFile(fileName);
+            case 'u' -> createFile(fileName);
             default -> System.out.println("Not a valid command.");
         }
+    }
+
+    private void createFile(String fileName) throws IOException {
+        File file = new File(serverDirectory.getAbsolutePath() + fileName);
+        if (!file.exists()){
+            if (file.createNewFile()){
+                System.out.println("File created: " + file);
+                writeBytesIntoFile(file);
+            } else {
+                System.out.println("Failed to create the file.");
+            }
+        } else {
+            System.out.println("File already exists.");
+            throw new IOException();
+        }
+    }
+
+    private void writeBytesIntoFile(File file) throws IOException {
+
     }
 
     private void deleteFile(String fileName) throws NullPointerException {
@@ -104,7 +123,7 @@ public class ServerTCP {
     }
 
     private void renameFile(String fileName) throws NullPointerException {
-        String[] arrOfStr = fileName.split("%",1);
+        String[] arrOfStr = fileName.split("%",2);
         File oldName = new File(serverDirectory.getAbsolutePath() + arrOfStr[0]);
         File newName = new File(serverDirectory.getAbsolutePath() + arrOfStr[1]);
         if (oldName.renameTo(newName)) {
