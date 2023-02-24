@@ -104,7 +104,7 @@ public class ServerTCP {
     }
 
     private void renameFile(String fileName) throws NullPointerException {
-        String[] arrOfStr = fileName.split("%",1);
+        String[] arrOfStr = fileName.split("%",2);
         File oldName = new File(serverDirectory.getAbsolutePath() + arrOfStr[0]);
         File newName = new File(serverDirectory.getAbsolutePath() + arrOfStr[1]);
         if (oldName.renameTo(newName)) {
