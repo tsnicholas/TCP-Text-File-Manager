@@ -65,9 +65,6 @@ public class ClientTCP {
         sc.shutdownOutput();
         ByteBuffer buffer = getServerResponse();
         printFileList(buffer);
-        buffer.flip();
-        buffer = getServerResponse();
-        printResponse(buffer);
     }
 
     private String promptUser(String prompt) {
@@ -97,6 +94,6 @@ public class ClientTCP {
     private void printFileList(ByteBuffer buffer) {
         buffer.flip();
         byte[] list = buffer.array();
-        System.out.println(new String(list));
+        System.out.println(new String(list).replace("\0", ""));
     }
 }
