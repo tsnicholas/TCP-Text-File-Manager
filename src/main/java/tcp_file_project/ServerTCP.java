@@ -88,7 +88,7 @@ public class ServerTCP {
     }
 
     private void deleteFile(String fileName) throws NullPointerException {
-        File file = new File(serverDirectory.getAbsolutePath() + fileName);
+        File file = new File(serverDirectory.getAbsolutePath() + "\\" + fileName);
         if(file.exists()) {
             if (file.delete()) {
                 System.out.println("Deleted the file: " + file.getName());
@@ -105,8 +105,8 @@ public class ServerTCP {
 
     private void renameFile(String fileName) throws NullPointerException {
         String[] arrOfStr = fileName.split("%",2);
-        File oldName = new File(serverDirectory.getAbsolutePath() + arrOfStr[0]);
-        File newName = new File(serverDirectory.getAbsolutePath() + arrOfStr[1]);
+        File oldName = new File(serverDirectory.getAbsolutePath() + "\\" + arrOfStr[0]);
+        File newName = new File(serverDirectory.getAbsolutePath() + "\\" + arrOfStr[1]);
         if (oldName.renameTo(newName)) {
             System.out.println("File Rename Successful");
         } else {
