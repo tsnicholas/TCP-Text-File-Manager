@@ -6,6 +6,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 
 public class ServerTCP {
     private SocketChannel serveChannel;
@@ -76,15 +77,39 @@ public class ServerTCP {
         serveChannel.write(buffer);
     }
 
-    private void performCommand(String messageToRead) throws NullPointerException {
+    private void performCommand(String messageToRead) throws NullPointerException, IOException {
         char command = messageToRead.charAt(0);
         String fileName = messageToRead.substring(1);
         switch(command) {
             case 'd' -> deleteFile(fileName);
             case 'D' -> System.out.println("Feature not Available yet");
             case 'r' -> renameFile(fileName);
+            case 'l' -> listFiles();
             default -> System.out.println("Not a valid command.");
         }
+    }
+
+    private void listFiles() throws IOException {
+        File directory = new File(serverDirectory.getAbsolutePath());
+        File[] listOfFiles = directory.listFiles();
+        StringBuilder response = new StringBuilder();
+        if(listOfFiles == null) {
+            listResponse("");
+        } else {
+            for (File file : listOfFiles) {
+                if (file.isFile()) {
+                    response.append(file.getName());
+                    response.append("\n");
+                }
+            }
+            listResponse(response.toString());
+        }
+    }
+
+    private void listResponse(String response) throws IOException {
+        ByteBuffer buffer;
+        buffer = ByteBuffer.wrap(response.getBytes());
+        serveChannel.write(buffer);
     }
 
     private void deleteFile(String fileName) throws NullPointerException {
