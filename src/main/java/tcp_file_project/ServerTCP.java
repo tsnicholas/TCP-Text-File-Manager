@@ -8,6 +8,8 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
 public class ServerTCP {
+    private static final String SUCCESS = "S";
+    private static final String FAILURE = "F";
     private SocketChannel serveChannel;
     private File serverDirectory;
 
@@ -46,7 +48,7 @@ public class ServerTCP {
             serveChannel = listenChannel.accept();
             ByteBuffer buffer = getRequest();
             String messageToRead = convertBytesToString(buffer);
-            fulfillRequest(messageToRead);
+            performCommand(messageToRead);
             serveChannel.close();
         }
     }
@@ -65,26 +67,49 @@ public class ServerTCP {
         return input.replace("\0", "");
     }
 
-    private void fulfillRequest(String messageToRead) throws IOException {
-        ByteBuffer buffer;
-        try {
-            performCommand(messageToRead);
-            buffer = ByteBuffer.wrap("S".getBytes());
-        } catch(NullPointerException e) {
-            buffer = ByteBuffer.wrap("F".getBytes());
-        }
-        serveChannel.write(buffer);
-    }
-
     private void performCommand(String messageToRead) throws NullPointerException, IOException {
         char command = messageToRead.charAt(0);
         String fileName = messageToRead.substring(1);
         switch(command) {
             case 'd' -> deleteFile(fileName);
-            case 'D' -> System.out.println("Feature not Available yet");
             case 'r' -> renameFile(fileName);
             case 'l' -> listFiles();
             default -> System.out.println("Not a valid command.");
+        }
+    }
+
+    private void deleteFile(String fileName) throws IOException {
+        File file = new File(serverDirectory.getAbsolutePath() + "\\" + fileName);
+        if(file.exists()) {
+            if (file.delete()) {
+                System.out.println("Deleted the file: " + file.getName());
+                respondToClient(SUCCESS);
+            } else {
+                System.out.println("Failed to delete the file.");
+                respondToClient(FAILURE);
+            }
+        } else {
+            System.out.println("File doesn't exist.");
+            respondToClient(FAILURE);
+        }
+    }
+
+    private void respondToClient(String operationCode) throws IOException {
+        ByteBuffer buffer = ByteBuffer.wrap(operationCode.getBytes());
+        serveChannel.write(buffer);
+    }
+
+    private void renameFile(String fileName) throws IOException {
+        String[] arrOfStr = fileName.split("%",2);
+        File oldName = new File(serverDirectory.getAbsolutePath() + "\\" + arrOfStr[0]);
+        File newName = new File(serverDirectory.getAbsolutePath() + "\\" + arrOfStr[1]);
+        if (oldName.renameTo(newName)) {
+            System.out.println("File Rename Successful");
+            respondToClient(SUCCESS);
+        } else {
+            System.out.println("Rename Failed");
+            // Once again, we have let the client know the operation failed.
+            respondToClient(FAILURE);
         }
     }
 
@@ -109,34 +134,5 @@ public class ServerTCP {
         ByteBuffer buffer;
         buffer = ByteBuffer.wrap(response.getBytes());
         serveChannel.write(buffer);
-    }
-
-    private void deleteFile(String fileName) throws NullPointerException {
-        File file = new File(serverDirectory.getAbsolutePath() + "\\" + fileName);
-        if(file.exists()) {
-            if (file.delete()) {
-                System.out.println("Deleted the file: " + file.getName());
-            } else {
-                System.out.println("Failed to delete the file.");
-                // While not really a NullPointerException, still need to let the client know the request failed.
-                throw new NullPointerException();
-            }
-        } else {
-            System.out.println("File doesn't exist.");
-            throw new NullPointerException();
-        }
-    }
-
-    private void renameFile(String fileName) throws NullPointerException {
-        String[] arrOfStr = fileName.split("%",2);
-        File oldName = new File(serverDirectory.getAbsolutePath() + "\\" + arrOfStr[0]);
-        File newName = new File(serverDirectory.getAbsolutePath() + "\\" + arrOfStr[1]);
-        if (oldName.renameTo(newName)) {
-            System.out.println("File Rename Successful");
-        } else {
-            System.out.println("Rename Failed");
-            // Once again, we have let the client know the operation failed.
-            throw new NullPointerException();
-        }
     }
 }
