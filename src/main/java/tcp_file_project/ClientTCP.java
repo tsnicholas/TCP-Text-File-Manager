@@ -65,6 +65,9 @@ public class ClientTCP {
         sc.shutdownOutput();
         ByteBuffer buffer = getServerResponse();
         printFileList(buffer);
+        buffer.flip();
+        buffer = getServerResponse();
+        printResponse(buffer);
     }
 
     private String promptUser(String prompt) {
