@@ -1,15 +1,14 @@
 package tcp_file_project;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-
 public class ServerTCP {
     private static final String SUCCESS = "S";
     private static final String FAILURE = "F";
+    private static final String SEPARATOR = "%";
     private SocketChannel serveChannel;
     private File serverDirectory;
 
@@ -23,14 +22,14 @@ public class ServerTCP {
             ServerSocketChannel listenChannel = ServerSocketChannel.open();
             listenChannel.bind(new InetSocketAddress(port));
             ServerTCP serverTCP = new ServerTCP();
-            serverTCP.createDirectory();
+            serverTCP.initializeDirectory();
             serverTCP.startService(listenChannel);
         } catch(IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void createDirectory() {
+    private void initializeDirectory() {
         String dir = System.getProperty("user.dir");
         serverDirectory = new File(dir + "\\ServerDirectory");
         if(!serverDirectory.exists()) {
@@ -69,11 +68,12 @@ public class ServerTCP {
 
     private void performCommand(String messageToRead) throws NullPointerException, IOException {
         char command = messageToRead.charAt(0);
-        String fileName = messageToRead.substring(1);
+        String fileData = messageToRead.substring(1);
         switch(command) {
-            case 'd' -> deleteFile(fileName);
-            case 'r' -> renameFile(fileName);
+            case 'd' -> deleteFile(fileData);
+            case 'r' -> renameFile(fileData);
             case 'l' -> listFiles();
+            case 'u' -> retrieveUpload(fileData);
             default -> System.out.println("Not a valid command.");
         }
     }
@@ -100,7 +100,7 @@ public class ServerTCP {
     }
 
     private void renameFile(String fileName) throws IOException {
-        String[] arrOfStr = fileName.split("%",2);
+        String[] arrOfStr = fileName.split(SEPARATOR,2);
         File oldName = new File(serverDirectory.getAbsolutePath() + "\\" + arrOfStr[0]);
         File newName = new File(serverDirectory.getAbsolutePath() + "\\" + arrOfStr[1]);
         if (oldName.renameTo(newName)) {
@@ -134,5 +134,32 @@ public class ServerTCP {
         ByteBuffer buffer;
         buffer = ByteBuffer.wrap(response.getBytes());
         serveChannel.write(buffer);
+    }
+
+    private void retrieveUpload(String fileData) throws IOException {
+        String[] fileContents = fileData.split(SEPARATOR, 2);
+        File file = initializeFile(fileContents[0]);
+        uploadContents(file, fileContents[1]);
+        respondToClient(SUCCESS);
+    }
+
+    private File initializeFile(String fileName) throws IOException {
+        File file = new File(serverDirectory.getAbsolutePath() + "\\" + fileName);
+        if(!file.exists()) {
+            if(file.createNewFile()) {
+                System.out.println("New file has been created :)");
+            } else {
+                System.out.println("Failed to create file. :(");
+                respondToClient(FAILURE);
+                throw new IOException();
+            }
+        }
+        return file;
+    }
+
+    private void uploadContents(File file, String content) throws IOException {
+        BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+        writer.write(content);
+        writer.close();
     }
 }
