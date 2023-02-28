@@ -11,6 +11,7 @@ public class ClientTCP {
     private static final String DELETE = "d";
     private static final String LIST = "l";
     private static final String UPLOAD = "u";
+    private static final String DOWNLOAD = "D";
     private static final String SEPARATOR = "%";
     private static final int MAX_TRANSFER_SIZE = 400;
     private static SocketChannel sc;
@@ -43,6 +44,7 @@ public class ClientTCP {
             case RENAME -> renameFile();
             case LIST -> listFile();
             case UPLOAD -> uploadFile();
+            case DOWNLOAD -> downloadFile();
             default -> System.out.println("Not a valid command.");
         }
     }
@@ -122,5 +124,55 @@ public class ClientTCP {
         System.out.println("Uploading " +
                 bufferedReader.read(readData, i, i + MAX_TRANSFER_SIZE) + " characters...");
         return new String(readData);
+    }
+
+    private void downloadFile() throws IOException {
+        String fileName = promptUser("Enter file name: ");
+        if(fileExistsInServer(fileName)) {
+            startDownload(fileName);
+        } else {
+            System.out.println("This file doesn't exist.");
+        }
+    }
+
+    private boolean fileExistsInServer(String fileName) throws IOException {
+        sc.write(ByteBuffer.wrap(LIST.getBytes()));
+        ByteBuffer buffer = ByteBuffer.allocate(MAX_TRANSFER_SIZE);
+        sc.read(buffer);
+        buffer.flip();
+        return new String(buffer.array()).contains(fileName);
+    }
+
+    private void startDownload(String fileName) throws IOException {
+        String downloadPath = promptUser("Enter the path to save download: ");
+        File file = new File(downloadPath + "\\" + fileName);
+        if(file.exists()) {
+            System.out.println("This file already exists.");
+            throw new IOException();
+        }
+        getFileContents(file);
+    }
+
+    private void getFileContents(File file) throws IOException {
+        while(true) {
+            String serverMsg = DOWNLOAD + file.getName();
+            sc.write(ByteBuffer.wrap(serverMsg.getBytes()));
+            String response = getServerResponse();
+            if(response.charAt(response.length() - 1) == '%') {
+                writeToFile(file, response.substring(0, response.length() - 2));
+                break;
+            } else if(response.equals("F")) {
+                printResponse(response);
+                throw new IOException();
+            } else {
+                writeToFile(file, response);
+            }
+        }
+    }
+
+    private void writeToFile(File file, String content) throws IOException {
+        BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+        writer.write(content);
+        writer.close();
     }
 }
