@@ -5,10 +5,12 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+
 public class ServerTCP {
     private static final String SUCCESS = "S";
     private static final String FAILURE = "F";
     private static final String SEPARATOR = "%";
+    private static final int MAX_TRANSFER_SIZE = 400;
     private SocketChannel serveChannel;
     private File serverDirectory;
 
@@ -74,6 +76,7 @@ public class ServerTCP {
             case 'r' -> renameFile(fileData);
             case 'l' -> listFiles();
             case 'u' -> retrieveUpload(fileData);
+            case 'D' -> downloadFile(fileData);
             default -> System.out.println("Not a valid command.");
         }
     }
@@ -161,5 +164,34 @@ public class ServerTCP {
         BufferedWriter writer = new BufferedWriter(new FileWriter(file));
         writer.write(content);
         writer.close();
+    }
+
+    private void downloadFile(String fileData) throws IOException {
+        File file = new File(serverDirectory.getAbsolutePath() + "\\" + fileData);
+        if (!file.exists()){
+            System.out.println("This file doesn't exist :(.");
+            respondToClient(FAILURE);
+        } else {
+            writeFileToClient(file);
+            respondToClient(SUCCESS);
+        }
+    }
+
+    private void writeFileToClient(File file) throws IOException {
+        StringBuilder sentData = new StringBuilder();
+        for (int i = 0; i < file.length(); i += MAX_TRANSFER_SIZE){
+            sentData.append(file.getName()).append(SEPARATOR).append(readFromFile(file, i));
+            serveChannel.write(ByteBuffer.wrap(sentData.toString().getBytes()));
+        }
+        sentData.append('%');
+        serveChannel.write(ByteBuffer.wrap(sentData.toString().getBytes()));
+    }
+
+    private String readFromFile(File file, int i) throws IOException {
+        char[] readData = new char[MAX_TRANSFER_SIZE];
+        BufferedReader reader = new BufferedReader(new FileReader(file));
+        System.out.println("Uploading " +
+                reader.read(readData, i, i + MAX_TRANSFER_SIZE) + " characters...");
+        return new String(readData);
     }
 }
