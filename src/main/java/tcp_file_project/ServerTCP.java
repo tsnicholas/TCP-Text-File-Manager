@@ -6,12 +6,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
-public class ServerTCP {
-    private static final String SUCCESS = "S";
-    private static final String FAILURE = "F";
-    private static final String SEPARATOR = "%";
-    private static final int MAX_TRANSFER_SIZE = 400;
-    private SocketChannel serveChannel;
+public class ServerTCP implements TCP {
+    private static SocketChannel serveChannel;
     private File serverDirectory;
 
     public static void main(String[] args) {
@@ -26,7 +22,7 @@ public class ServerTCP {
             ServerTCP serverTCP = new ServerTCP();
             serverTCP.initializeDirectory();
             serverTCP.startService(listenChannel);
-            serverTCP.serveChannel.close();
+            serveChannel.close();
         } catch(IOException e) {
             e.printStackTrace();
         }
@@ -52,6 +48,7 @@ public class ServerTCP {
             String messageToRead = convertBytesToString(buffer);
             performCommand(messageToRead);
         }
+
     }
 
     private ByteBuffer getRequest() throws IOException {
@@ -64,25 +61,24 @@ public class ServerTCP {
     private String convertBytesToString(ByteBuffer buffer) {
         byte[] bytes = buffer.array();
         String input = new String(bytes);
-        // Remove null bytes in the string.
-        return input.replace("\0", "");
+        return input.replace(NULL_BYTE, NOTHING);
     }
 
     private void performCommand(String messageToRead) throws NullPointerException, IOException {
         char command = messageToRead.charAt(0);
         String fileData = messageToRead.substring(1);
-        switch(command) {
-            case 'd' -> deleteFile(fileData);
-            case 'r' -> renameFile(fileData);
-            case 'l' -> listFiles();
-            case 'u' -> retrieveUpload(fileData);
-            case 'D' -> downloadFile(fileData);
+        switch(String.valueOf(command)) {
+            case DELETE -> deleteFile(fileData);
+            case RENAME -> renameFile(fileData);
+            case LIST -> listFiles();
+            case UPLOAD -> retrieveUpload(fileData);
+            case DOWNLOAD -> downloadFile(fileData);
             default -> System.out.println("Not a valid command.");
         }
     }
 
     private void deleteFile(String fileName) throws IOException {
-        File file = new File(serverDirectory.getAbsolutePath() + "\\" + fileName);
+        File file = new File(serverDirectory.getAbsolutePath() + SLASH + fileName);
         if(file.exists()) {
             if (file.delete()) {
                 System.out.println("Deleted the file: " + file.getName());
@@ -104,14 +100,13 @@ public class ServerTCP {
 
     private void renameFile(String fileName) throws IOException {
         String[] arrOfStr = fileName.split(SEPARATOR,2);
-        File oldName = new File(serverDirectory.getAbsolutePath() + "\\" + arrOfStr[0]);
-        File newName = new File(serverDirectory.getAbsolutePath() + "\\" + arrOfStr[1]);
+        File oldName = new File(serverDirectory.getAbsolutePath() + SLASH + arrOfStr[0]);
+        File newName = new File(serverDirectory.getAbsolutePath() + SLASH + arrOfStr[1]);
         if (oldName.renameTo(newName)) {
             System.out.println("File Rename Successful");
             respondToClient(SUCCESS);
         } else {
             System.out.println("Rename Failed");
-            // Once again, we have let the client know the operation failed.
             respondToClient(FAILURE);
         }
     }
@@ -121,12 +116,11 @@ public class ServerTCP {
         File[] listOfFiles = directory.listFiles();
         StringBuilder response = new StringBuilder();
         if(listOfFiles == null) {
-            listResponse("");
+            listResponse(NOTHING);
         } else {
             for (File file : listOfFiles) {
                 if (file.isFile()) {
-                    response.append(file.getName());
-                    response.append("\n");
+                    response.append(file.getName()).append("\n");
                 }
             }
             listResponse(response.toString());
@@ -147,7 +141,7 @@ public class ServerTCP {
     }
 
     private File initializeFile(String fileName) throws IOException {
-        File file = new File(serverDirectory.getAbsolutePath() + "\\" + fileName);
+        File file = new File(serverDirectory.getAbsolutePath() + SLASH + fileName);
         if(!file.exists()) {
             if(file.createNewFile()) {
                 System.out.println("New file has been created :)");
@@ -167,7 +161,7 @@ public class ServerTCP {
     }
 
     private void downloadFile(String fileData) throws IOException {
-        File file = new File(serverDirectory.getAbsolutePath() + "\\" + fileData);
+        File file = new File(serverDirectory.getAbsolutePath() + SLASH + fileData);
         if (!file.exists()) {
             System.out.println("This file doesn't exist :(.");
             respondToClient(FAILURE);

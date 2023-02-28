@@ -6,17 +6,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Scanner;
 
-public class ClientTCP {
-    private static final String RENAME = "r";
-    private static final String DELETE = "d";
-    private static final String LIST = "l";
-    private static final String UPLOAD = "u";
-    private static final String DOWNLOAD = "D";
-    private static final String SEPARATOR = "%";
-    private static final String FAILURE = "F";
+public class ClientTCP implements TCP {
     private static final String GENERIC_FILE_PROMPT = "Enter file name: ";
-    private static final String DEFAULT_FILE_DOES_NOT_EXIST_MSG = "This file doesn't exist.";
-    private static final int MAX_TRANSFER_SIZE = 400;
     private static SocketChannel sc;
 
     public static void main(String[] args) {
@@ -85,8 +76,7 @@ public class ClientTCP {
         ByteBuffer buffer = ByteBuffer.allocate(MAX_TRANSFER_SIZE);
         sc.read(buffer);
         buffer.flip();
-        // Replaces null characters before returning.
-        return new String(buffer.array()).replace("\0", "");
+        return new String(buffer.array()).replace(NULL_BYTE, NOTHING);
     }
 
     private void printResponse(String responseCode) {
