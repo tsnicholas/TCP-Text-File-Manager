@@ -22,7 +22,6 @@ public class ServerTCP extends TCPProcessor implements TCP {
             ServerTCP serverTCP = new ServerTCP();
             serverTCP.initializeDirectory();
             serverTCP.startService(listenChannel);
-            // TODO: Find a way to close the SocketChannel cleanly.
             serveChannel.close();
         } catch(IOException e) {
             e.printStackTrace();
@@ -48,7 +47,6 @@ public class ServerTCP extends TCPProcessor implements TCP {
             String messageToRead = getMessageData(serveChannel);
             performCommand(messageToRead);
         }
-
     }
 
     private void performCommand(String messageToRead) throws NullPointerException, IOException {
