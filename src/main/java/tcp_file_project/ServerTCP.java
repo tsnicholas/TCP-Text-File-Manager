@@ -6,12 +6,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
-public class ServerTCP {
-    private static final String SUCCESS = "S";
-    private static final String FAILURE = "F";
-    private static final String SEPARATOR = "%";
-    private static final int MAX_TRANSFER_SIZE = 400;
-    private SocketChannel serveChannel;
+public class ServerTCP extends TCPProcessor implements TCP {
+    private static SocketChannel serveChannel;
     private File serverDirectory;
 
     public static void main(String[] args) {
@@ -26,6 +22,8 @@ public class ServerTCP {
             ServerTCP serverTCP = new ServerTCP();
             serverTCP.initializeDirectory();
             serverTCP.startService(listenChannel);
+            // TODO: Find a way to close the SocketChannel cleanly.
+            serveChannel.close();
         } catch(IOException e) {
             e.printStackTrace();
         }
@@ -45,44 +43,29 @@ public class ServerTCP {
 
     @SuppressWarnings("InfiniteLoopStatement")
     private void startService(ServerSocketChannel listenChannel) throws IOException {
+        serveChannel = listenChannel.accept();
         while(true) {
-            serveChannel = listenChannel.accept();
-            ByteBuffer buffer = getRequest();
-            String messageToRead = convertBytesToString(buffer);
+            String messageToRead = getMessageData(serveChannel);
             performCommand(messageToRead);
-            serveChannel.close();
         }
-    }
 
-    private ByteBuffer getRequest() throws IOException {
-        ByteBuffer buffer = ByteBuffer.allocate(1024);
-        serveChannel.read(buffer);
-        buffer.flip();
-        return buffer;
-    }
-
-    private String convertBytesToString(ByteBuffer buffer) {
-        byte[] bytes = buffer.array();
-        String input = new String(bytes);
-        // Remove null bytes in the string.
-        return input.replace("\0", "");
     }
 
     private void performCommand(String messageToRead) throws NullPointerException, IOException {
         char command = messageToRead.charAt(0);
         String fileData = messageToRead.substring(1);
-        switch(command) {
-            case 'd' -> deleteFile(fileData);
-            case 'r' -> renameFile(fileData);
-            case 'l' -> listFiles();
-            case 'u' -> retrieveUpload(fileData);
-            case 'D' -> downloadFile(fileData);
+        switch(String.valueOf(command)) {
+            case DELETE -> deleteFile(fileData);
+            case RENAME -> renameFile(fileData);
+            case LIST -> listFiles();
+            case UPLOAD -> retrieveUpload(fileData);
+            case DOWNLOAD -> downloadFile(fileData);
             default -> System.out.println("Not a valid command.");
         }
     }
 
     private void deleteFile(String fileName) throws IOException {
-        File file = new File(serverDirectory.getAbsolutePath() + "\\" + fileName);
+        File file = new File(serverDirectory.getAbsolutePath() + SLASH + fileName);
         if(file.exists()) {
             if (file.delete()) {
                 System.out.println("Deleted the file: " + file.getName());
@@ -92,7 +75,7 @@ public class ServerTCP {
                 respondToClient(FAILURE);
             }
         } else {
-            System.out.println("File doesn't exist.");
+            System.out.println(DEFAULT_FILE_DOES_NOT_EXIST_MSG);
             respondToClient(FAILURE);
         }
     }
@@ -104,14 +87,13 @@ public class ServerTCP {
 
     private void renameFile(String fileName) throws IOException {
         String[] arrOfStr = fileName.split(SEPARATOR,2);
-        File oldName = new File(serverDirectory.getAbsolutePath() + "\\" + arrOfStr[0]);
-        File newName = new File(serverDirectory.getAbsolutePath() + "\\" + arrOfStr[1]);
+        File oldName = new File(serverDirectory.getAbsolutePath() + SLASH + arrOfStr[0]);
+        File newName = new File(serverDirectory.getAbsolutePath() + SLASH + arrOfStr[1]);
         if (oldName.renameTo(newName)) {
             System.out.println("File Rename Successful");
             respondToClient(SUCCESS);
         } else {
             System.out.println("Rename Failed");
-            // Once again, we have let the client know the operation failed.
             respondToClient(FAILURE);
         }
     }
@@ -125,8 +107,7 @@ public class ServerTCP {
         } else {
             for (File file : listOfFiles) {
                 if (file.isFile()) {
-                    response.append(file.getName());
-                    response.append("\n");
+                    response.append(file.getName()).append("\n");
                 }
             }
             listResponse(response.toString());
@@ -142,12 +123,12 @@ public class ServerTCP {
     private void retrieveUpload(String fileData) throws IOException {
         String[] fileContents = fileData.split(SEPARATOR, 2);
         File file = initializeFile(fileContents[0]);
-        uploadContents(file, fileContents[1]);
+        writeToFile(file, fileContents[1]);
         respondToClient(SUCCESS);
     }
 
     private File initializeFile(String fileName) throws IOException {
-        File file = new File(serverDirectory.getAbsolutePath() + "\\" + fileName);
+        File file = new File(serverDirectory.getAbsolutePath() + SLASH + fileName);
         if(!file.exists()) {
             if(file.createNewFile()) {
                 System.out.println("New file has been created :)");
@@ -160,38 +141,20 @@ public class ServerTCP {
         return file;
     }
 
-    private void uploadContents(File file, String content) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-        writer.write(content);
-        writer.close();
-    }
-
     private void downloadFile(String fileData) throws IOException {
-        File file = new File(serverDirectory.getAbsolutePath() + "\\" + fileData);
-        if (!file.exists()){
-            System.out.println("This file doesn't exist :(.");
+        File file = new File(serverDirectory.getAbsolutePath() + SLASH + fileData);
+        if (!file.exists()) {
+            System.out.println(DEFAULT_FILE_DOES_NOT_EXIST_MSG);
             respondToClient(FAILURE);
         } else {
             writeFileToClient(file);
-            respondToClient(SUCCESS);
         }
     }
 
     private void writeFileToClient(File file) throws IOException {
-        StringBuilder sentData = new StringBuilder();
-        for (int i = 0; i < file.length(); i += MAX_TRANSFER_SIZE){
-            sentData.append(file.getName()).append(SEPARATOR).append(readFromFile(file, i));
-            serveChannel.write(ByteBuffer.wrap(sentData.toString().getBytes()));
+        for (int i = 0; i < file.length(); i += MAX_TRANSFER_SIZE) {
+            serveChannel.write(ByteBuffer.wrap(readFromFile(file, i).getBytes()));
         }
-        sentData.append('%');
-        serveChannel.write(ByteBuffer.wrap(sentData.toString().getBytes()));
-    }
-
-    private String readFromFile(File file, int i) throws IOException {
-        char[] readData = new char[MAX_TRANSFER_SIZE];
-        BufferedReader reader = new BufferedReader(new FileReader(file));
-        System.out.println("Uploading " +
-                reader.read(readData, i, i + MAX_TRANSFER_SIZE) + " characters...");
-        return new String(readData);
+        serveChannel.write(ByteBuffer.wrap(SEPARATOR.getBytes()));
     }
 }
