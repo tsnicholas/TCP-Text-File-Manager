@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
-public class ServerTCP implements TCP {
+public class ServerTCP extends TCPProcessor implements TCP {
     private static SocketChannel serveChannel;
     private File serverDirectory;
 
@@ -22,6 +22,7 @@ public class ServerTCP implements TCP {
             ServerTCP serverTCP = new ServerTCP();
             serverTCP.initializeDirectory();
             serverTCP.startService(listenChannel);
+            // TODO: Find a way to close the SocketChannel cleanly.
             serveChannel.close();
         } catch(IOException e) {
             e.printStackTrace();
@@ -44,24 +45,10 @@ public class ServerTCP implements TCP {
     private void startService(ServerSocketChannel listenChannel) throws IOException {
         serveChannel = listenChannel.accept();
         while(true) {
-            ByteBuffer buffer = getRequest();
-            String messageToRead = convertBytesToString(buffer);
+            String messageToRead = getMessageData(serveChannel);
             performCommand(messageToRead);
         }
 
-    }
-
-    private ByteBuffer getRequest() throws IOException {
-        ByteBuffer buffer = ByteBuffer.allocate(1024);
-        serveChannel.read(buffer);
-        buffer.flip();
-        return buffer;
-    }
-
-    private String convertBytesToString(ByteBuffer buffer) {
-        byte[] bytes = buffer.array();
-        String input = new String(bytes);
-        return input.replace(NULL_BYTE, NOTHING);
     }
 
     private void performCommand(String messageToRead) throws NullPointerException, IOException {
@@ -88,7 +75,7 @@ public class ServerTCP implements TCP {
                 respondToClient(FAILURE);
             }
         } else {
-            System.out.println("File doesn't exist.");
+            System.out.println(DEFAULT_FILE_DOES_NOT_EXIST_MSG);
             respondToClient(FAILURE);
         }
     }
@@ -116,7 +103,7 @@ public class ServerTCP implements TCP {
         File[] listOfFiles = directory.listFiles();
         StringBuilder response = new StringBuilder();
         if(listOfFiles == null) {
-            listResponse(NOTHING);
+            listResponse("");
         } else {
             for (File file : listOfFiles) {
                 if (file.isFile()) {
@@ -136,7 +123,7 @@ public class ServerTCP implements TCP {
     private void retrieveUpload(String fileData) throws IOException {
         String[] fileContents = fileData.split(SEPARATOR, 2);
         File file = initializeFile(fileContents[0]);
-        uploadContents(file, fileContents[1]);
+        writeToFile(file, fileContents[1]);
         respondToClient(SUCCESS);
     }
 
@@ -154,16 +141,10 @@ public class ServerTCP implements TCP {
         return file;
     }
 
-    private void uploadContents(File file, String content) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-        writer.write(content);
-        writer.close();
-    }
-
     private void downloadFile(String fileData) throws IOException {
         File file = new File(serverDirectory.getAbsolutePath() + SLASH + fileData);
         if (!file.exists()) {
-            System.out.println("This file doesn't exist :(.");
+            System.out.println(DEFAULT_FILE_DOES_NOT_EXIST_MSG);
             respondToClient(FAILURE);
         } else {
             writeFileToClient(file);
@@ -175,13 +156,5 @@ public class ServerTCP implements TCP {
             serveChannel.write(ByteBuffer.wrap(readFromFile(file, i).getBytes()));
         }
         serveChannel.write(ByteBuffer.wrap(SEPARATOR.getBytes()));
-    }
-
-    private String readFromFile(File file, int i) throws IOException {
-        char[] readData = new char[MAX_TRANSFER_SIZE];
-        BufferedReader reader = new BufferedReader(new FileReader(file));
-        System.out.println("Uploading " +
-                reader.read(readData, i, i + MAX_TRANSFER_SIZE) + " characters...");
-        return new String(readData);
     }
 }

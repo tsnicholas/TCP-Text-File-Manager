@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Scanner;
 
-public class ClientTCP implements TCP {
+public class ClientTCP extends TCPProcessor implements TCP {
     private static final String GENERIC_FILE_PROMPT = "Enter file name: ";
     private static SocketChannel sc;
 
@@ -47,7 +47,7 @@ public class ClientTCP implements TCP {
         String output = DELETE + promptUser(GENERIC_FILE_PROMPT);
         sc.write(ByteBuffer.wrap(output.getBytes()));
         sc.shutdownOutput();
-        printResponse(getServerResponse());
+        printResponse(getMessageData(sc));
         sc.close();
     }
 
@@ -55,14 +55,14 @@ public class ClientTCP implements TCP {
         String output = RENAME + promptUser(GENERIC_FILE_PROMPT) + SEPARATOR + promptUser("Rename file to: ");
         sc.write(ByteBuffer.wrap(output.getBytes()));
         sc.shutdownOutput();
-        printResponse(getServerResponse());
+        printResponse(getMessageData(sc));
         sc.close();
     }
 
     private void listFile() throws IOException {
         sc.write(ByteBuffer.wrap(LIST.getBytes()));
         sc.shutdownOutput();
-        System.out.println(getServerResponse());
+        System.out.println(getMessageData(sc));
         sc.close();
     }
 
@@ -70,13 +70,6 @@ public class ClientTCP implements TCP {
         Scanner scanner = new Scanner(System.in);
         System.out.println(prompt);
         return scanner.nextLine();
-    }
-
-    private String getServerResponse() throws IOException {
-        ByteBuffer buffer = ByteBuffer.allocate(MAX_TRANSFER_SIZE);
-        sc.read(buffer);
-        buffer.flip();
-        return new String(buffer.array()).replace(NULL_BYTE, NOTHING);
     }
 
     private void printResponse(String responseCode) {
@@ -102,21 +95,13 @@ public class ClientTCP implements TCP {
         for(int i = 0; i < file.length(); i += MAX_TRANSFER_SIZE) {
             String uploadData = UPLOAD + file.getName() + SEPARATOR + readFromFile(file, i);
             sc.write(ByteBuffer.wrap(uploadData.getBytes()));
-            String responseCode = getServerResponse();
+            String responseCode = getMessageData(sc);
             printResponse(responseCode);
             // If for some reason the server fails during the process, terminate the loop.
             if(responseCode.equals(FAILURE)) {
                 break;
             }
         }
-    }
-
-    private String readFromFile(File file, int i) throws IOException {
-        char[] readData = new char[MAX_TRANSFER_SIZE];
-        BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
-        System.out.println("Uploading " +
-                bufferedReader.read(readData, i, i + MAX_TRANSFER_SIZE) + " characters...");
-        return new String(readData);
     }
 
     private void downloadFile() throws IOException {
@@ -160,7 +145,7 @@ public class ClientTCP implements TCP {
         while(true) {
             String serverMsg = DOWNLOAD + file.getName();
             sc.write(ByteBuffer.wrap(serverMsg.getBytes()));
-            String response = getServerResponse();
+            String response = getMessageData(sc);
             if(response.equals(SEPARATOR)) {
                 break;
             } else if(response.equals(FAILURE)) {
@@ -170,11 +155,5 @@ public class ClientTCP implements TCP {
                 writeToFile(file, response);
             }
         }
-    }
-
-    private void writeToFile(File file, String content) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-        writer.write(content);
-        writer.close();
     }
 }
