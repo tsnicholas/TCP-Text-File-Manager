@@ -26,6 +26,7 @@ public class ServerTCP {
             ServerTCP serverTCP = new ServerTCP();
             serverTCP.initializeDirectory();
             serverTCP.startService(listenChannel);
+            serverTCP.serveChannel.close();
         } catch(IOException e) {
             e.printStackTrace();
         }
@@ -45,12 +46,11 @@ public class ServerTCP {
 
     @SuppressWarnings("InfiniteLoopStatement")
     private void startService(ServerSocketChannel listenChannel) throws IOException {
+        serveChannel = listenChannel.accept();
         while(true) {
-            serveChannel = listenChannel.accept();
             ByteBuffer buffer = getRequest();
             String messageToRead = convertBytesToString(buffer);
             performCommand(messageToRead);
-            serveChannel.close();
         }
     }
 
@@ -168,18 +168,17 @@ public class ServerTCP {
 
     private void downloadFile(String fileData) throws IOException {
         File file = new File(serverDirectory.getAbsolutePath() + "\\" + fileData);
-        if (!file.exists()){
+        if (!file.exists()) {
             System.out.println("This file doesn't exist :(.");
             respondToClient(FAILURE);
         } else {
             writeFileToClient(file);
-            respondToClient(SUCCESS);
         }
     }
 
     private void writeFileToClient(File file) throws IOException {
         for (int i = 0; i < file.length(); i += MAX_TRANSFER_SIZE) {
-            serveChannel.write(ByteBuffer.wrap((file.getName() + SEPARATOR + readFromFile(file, i)).getBytes()));
+            serveChannel.write(ByteBuffer.wrap(readFromFile(file, i).getBytes()));
         }
         serveChannel.write(ByteBuffer.wrap(SEPARATOR.getBytes()));
     }

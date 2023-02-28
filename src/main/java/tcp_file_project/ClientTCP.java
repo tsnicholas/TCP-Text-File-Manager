@@ -153,7 +153,17 @@ public class ClientTCP {
             System.out.println("This file already exists.");
             throw new IOException();
         }
+        initializeDownload(file);
         getFileContents(file);
+    }
+
+    private void initializeDownload(File file) throws IOException {
+        if(file.createNewFile()) {
+            System.out.println("Downloading " + file.getName() + "...");
+        } else {
+            System.out.println("Error: Couldn't create file in that directory.");
+            throw new IOException();
+        }
     }
 
     private void getFileContents(File file) throws IOException {
