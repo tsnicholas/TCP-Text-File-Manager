@@ -13,6 +13,7 @@ public class ClientTCP {
     private static final String UPLOAD = "u";
     private static final String DOWNLOAD = "D";
     private static final String SEPARATOR = "%";
+    private static final String FAILURE = "F";
     private static final String GENERIC_FILE_PROMPT = "Enter file name: ";
     private static final String DEFAULT_FILE_DOES_NOT_EXIST_MSG = "This file doesn't exist.";
     private static final int MAX_TRANSFER_SIZE = 400;
@@ -91,7 +92,7 @@ public class ClientTCP {
     private void printResponse(String responseCode) {
         switch(responseCode) {
             case "S" -> System.out.println("Operation Successful.");
-            case "F" -> System.out.println("Operation Failed.");
+            case FAILURE -> System.out.println("Operation Failed.");
             default -> System.out.println("Unknown response from server.");
         }
     }
@@ -114,7 +115,7 @@ public class ClientTCP {
             String responseCode = getServerResponse();
             printResponse(responseCode);
             // If for some reason the server fails during the process, terminate the loop.
-            if(responseCode.equals("F")) {
+            if(responseCode.equals(FAILURE)) {
                 break;
             }
         }
@@ -163,7 +164,7 @@ public class ClientTCP {
             if(response.charAt(response.length() - 1) == '%') {
                 writeToFile(file, response.substring(0, response.length() - 2));
                 break;
-            } else if(response.equals("F")) {
+            } else if(response.equals(FAILURE)) {
                 printResponse(response);
                 throw new IOException();
             } else {
