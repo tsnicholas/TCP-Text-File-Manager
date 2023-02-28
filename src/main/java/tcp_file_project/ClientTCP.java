@@ -161,8 +161,7 @@ public class ClientTCP {
             String serverMsg = DOWNLOAD + file.getName();
             sc.write(ByteBuffer.wrap(serverMsg.getBytes()));
             String response = getServerResponse();
-            if(response.charAt(response.length() - 1) == '%') {
-                writeToFile(file, response.substring(0, response.length() - 2));
+            if(response.equals(SEPARATOR)) {
                 break;
             } else if(response.equals(FAILURE)) {
                 printResponse(response);

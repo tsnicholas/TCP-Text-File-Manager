@@ -178,13 +178,10 @@ public class ServerTCP {
     }
 
     private void writeFileToClient(File file) throws IOException {
-        StringBuilder sentData = new StringBuilder();
-        for (int i = 0; i < file.length(); i += MAX_TRANSFER_SIZE){
-            sentData.append(file.getName()).append(SEPARATOR).append(readFromFile(file, i));
-            serveChannel.write(ByteBuffer.wrap(sentData.toString().getBytes()));
+        for (int i = 0; i < file.length(); i += MAX_TRANSFER_SIZE) {
+            serveChannel.write(ByteBuffer.wrap((file.getName() + SEPARATOR + readFromFile(file, i)).getBytes()));
         }
-        sentData.append('%');
-        serveChannel.write(ByteBuffer.wrap(sentData.toString().getBytes()));
+        serveChannel.write(ByteBuffer.wrap(SEPARATOR.getBytes()));
     }
 
     private String readFromFile(File file, int i) throws IOException {
