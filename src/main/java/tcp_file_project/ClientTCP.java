@@ -13,6 +13,8 @@ public class ClientTCP {
     private static final String UPLOAD = "u";
     private static final String DOWNLOAD = "D";
     private static final String SEPARATOR = "%";
+    private static final String GENERIC_FILE_PROMPT = "Enter file name: ";
+    private static final String DEFAULT_FILE_DOES_NOT_EXIST_MSG = "This file doesn't exist.";
     private static final int MAX_TRANSFER_SIZE = 400;
     private static SocketChannel sc;
 
@@ -50,7 +52,7 @@ public class ClientTCP {
     }
 
     private void deleteFile() throws IOException {
-        String output = DELETE + promptUser("Enter file name: ");
+        String output = DELETE + promptUser(GENERIC_FILE_PROMPT);
         sc.write(ByteBuffer.wrap(output.getBytes()));
         sc.shutdownOutput();
         printResponse(getServerResponse());
@@ -58,7 +60,7 @@ public class ClientTCP {
     }
 
     private void renameFile() throws IOException {
-        String output = RENAME + promptUser("Enter File name: ") + SEPARATOR + promptUser("Rename file to: ");
+        String output = RENAME + promptUser(GENERIC_FILE_PROMPT) + SEPARATOR + promptUser("Rename file to: ");
         sc.write(ByteBuffer.wrap(output.getBytes()));
         sc.shutdownOutput();
         printResponse(getServerResponse());
@@ -98,7 +100,7 @@ public class ClientTCP {
         String filePath = promptUser("Enter the absolute file path: ");
         File file = new File(filePath);
         if(!file.exists()) {
-            System.out.println("This file doesn't exist.");
+            System.out.println(DEFAULT_FILE_DOES_NOT_EXIST_MSG);
         } else {
             writeFileToServer(file);
         }
@@ -127,11 +129,11 @@ public class ClientTCP {
     }
 
     private void downloadFile() throws IOException {
-        String fileName = promptUser("Enter file name: ");
+        String fileName = promptUser(GENERIC_FILE_PROMPT);
         if(fileExistsInServer(fileName)) {
             startDownload(fileName);
         } else {
-            System.out.println("This file doesn't exist.");
+            System.out.println(DEFAULT_FILE_DOES_NOT_EXIST_MSG);
         }
     }
 
