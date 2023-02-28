@@ -15,8 +15,6 @@ public interface TCP {
 
     // Other constant data
     int MAX_TRANSFER_SIZE = 400;
-    String NULL_BYTE = "\0";
-    String NOTHING = "";
     String SLASH = "\\";
     String DEFAULT_FILE_DOES_NOT_EXIST_MSG = "This file doesn't exist.";
 }
