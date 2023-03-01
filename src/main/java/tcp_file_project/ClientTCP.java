@@ -92,36 +92,21 @@ public class ClientTCP extends TCPProcessor implements TCP {
     }
 
     private void writeFileToServer(File file) throws IOException {
-        for(int i = 0; i < file.length(); i += MAX_TRANSFER_SIZE) {
-            String uploadData = UPLOAD + file.getName() + SEPARATOR + readFromFile(file, i);
-            sc.write(ByteBuffer.wrap(uploadData.getBytes()));
-            String responseCode = getMessageData(sc);
-            printResponse(responseCode);
-            // If for some reason the server fails during the process, terminate the loop.
-            if(responseCode.equals(FAILURE)) {
-                break;
-            }
+        char[] readData = new char[MAX_TRANSFER_SIZE];
+        BufferedReader reader = new BufferedReader(new FileReader(file));
+        String uploadData = UPLOAD + file.getName() + SEPARATOR;
+        sc.write(ByteBuffer.wrap(uploadData.getBytes()));
+        while(reader.read(readData, 0, MAX_TRANSFER_SIZE) != -1) {
+            String data = new String(readData);
+            sc.write(ByteBuffer.wrap(data.getBytes()));
         }
+        sc.write(ByteBuffer.wrap(SEPARATOR.getBytes()));
+        String responseCode = getMessageData(sc);
+        printResponse(responseCode);
     }
 
     private void downloadFile() throws IOException {
         String fileName = promptUser(GENERIC_FILE_PROMPT);
-        if(fileExistsInServer(fileName)) {
-            startDownload(fileName);
-        } else {
-            System.out.println(DEFAULT_FILE_DOES_NOT_EXIST_MSG);
-        }
-    }
-
-    private boolean fileExistsInServer(String fileName) throws IOException {
-        sc.write(ByteBuffer.wrap(LIST.getBytes()));
-        ByteBuffer buffer = ByteBuffer.allocate(MAX_TRANSFER_SIZE);
-        sc.read(buffer);
-        buffer.flip();
-        return new String(buffer.array()).contains(fileName);
-    }
-
-    private void startDownload(String fileName) throws IOException {
         String downloadPath = promptUser("Enter the path to save download: ");
         File file = new File(downloadPath + "\\" + fileName);
         if(file.exists()) {
@@ -142,18 +127,16 @@ public class ClientTCP extends TCPProcessor implements TCP {
     }
 
     private void getFileContents(File file) throws IOException {
+        String serverMsg = DOWNLOAD + file.getName();
+        sc.write(ByteBuffer.wrap(serverMsg.getBytes()));
         while(true) {
-            String serverMsg = DOWNLOAD + file.getName();
-            sc.write(ByteBuffer.wrap(serverMsg.getBytes()));
-            String response = getMessageData(sc);
-            if(response.equals(SEPARATOR)) {
-                break;
-            } else if(response.equals(FAILURE)) {
-                printResponse(response);
-                throw new IOException();
+            String data = getMessageData(sc);
+            if(!data.equals(SEPARATOR)) {
+                writeToFile(file, data);
             } else {
-                writeToFile(file, response);
+                break;
             }
         }
+        printResponse(getMessageData(sc));
     }
 }
