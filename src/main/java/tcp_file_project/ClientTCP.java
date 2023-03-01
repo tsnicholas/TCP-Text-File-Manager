@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Scanner;
 
-public class ClientTCP extends TCPProcessor implements TCP {
+public class ClientTCP extends TCPProcessor implements TCPData {
     private static final String GENERIC_FILE_PROMPT = "Enter file name: ";
     private static SocketChannel sc;
 
@@ -105,7 +105,6 @@ public class ClientTCP extends TCPProcessor implements TCP {
             System.out.println("This file already exists.");
             throw new IOException();
         }
-        initializeDownload(file);
         getFileContents(file);
         sc.close();
     }
@@ -122,7 +121,12 @@ public class ClientTCP extends TCPProcessor implements TCP {
     private void getFileContents(File file) throws IOException {
         String serverMsg = DOWNLOAD + file.getName();
         sc.write(ByteBuffer.wrap(serverMsg.getBytes()));
-        receiveFile(sc, file);
-        printResponse(getMessageData(sc));
+        if(getMessageData(sc).equals(SUCCESS)) {
+            initializeDownload(file);
+            receiveFile(sc, file);
+            printResponse(getMessageData(sc));
+        } else {
+            System.out.println(DEFAULT_FILE_DOES_NOT_EXIST_MSG);
+        }
     }
 }

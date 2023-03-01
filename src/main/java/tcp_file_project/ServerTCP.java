@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
-public class ServerTCP extends TCPProcessor implements TCP {
+public class ServerTCP extends TCPProcessor implements TCPData {
     private static SocketChannel serveChannel;
     private File serverDirectory;
 
@@ -143,6 +143,7 @@ public class ServerTCP extends TCPProcessor implements TCP {
             System.out.println(DEFAULT_FILE_DOES_NOT_EXIST_MSG);
             respondToClient(FAILURE);
         } else {
+            respondToClient(SUCCESS);
             respondToClient(transferFile(serveChannel, file));
         }
     }
