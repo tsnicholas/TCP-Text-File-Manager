@@ -1,6 +1,6 @@
 package tcp_file_project;
 
-public interface TCP {
+public interface TCPData {
     // Commands
     String DOWNLOAD = "D";
     String UPLOAD = "u";

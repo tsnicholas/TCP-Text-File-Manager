@@ -4,7 +4,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-public abstract class TCPProcessor implements TCP {
+public abstract class TCPProcessor implements TCPData {
     private static final String END_CODE = "~END~";
 
     public String getMessageData(SocketChannel sc) throws IOException {
@@ -29,7 +29,9 @@ public abstract class TCPProcessor implements TCP {
     public void receiveFile(SocketChannel sc, File file) throws IOException {
         while(true) {
             String data = getMessageData(sc);
-            if(!data.equals(END_CODE)) {
+            if(data.equals(FAILURE)) {
+                throw new IOException();
+            } else if(!data.equals(END_CODE)) {
                 writeToFile(file, data);
             } else {
                 sc.write(ByteBuffer.wrap(SUCCESS.getBytes()));
