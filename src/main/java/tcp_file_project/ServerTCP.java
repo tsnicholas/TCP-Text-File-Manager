@@ -22,7 +22,6 @@ public class ServerTCP extends TCPProcessor implements TCP {
             ServerTCP serverTCP = new ServerTCP();
             serverTCP.initializeDirectory();
             serverTCP.startService(listenChannel);
-            serveChannel.close();
         } catch(IOException e) {
             e.printStackTrace();
         }
@@ -42,10 +41,11 @@ public class ServerTCP extends TCPProcessor implements TCP {
 
     @SuppressWarnings("InfiniteLoopStatement")
     private void startService(ServerSocketChannel listenChannel) throws IOException {
-        serveChannel = listenChannel.accept();
         while(true) {
+            serveChannel = listenChannel.accept();
             String messageToRead = getMessageData(serveChannel);
             performCommand(messageToRead);
+            serveChannel.close();
         }
     }
 
@@ -121,7 +121,14 @@ public class ServerTCP extends TCPProcessor implements TCP {
     private void retrieveUpload(String fileData) throws IOException {
         String[] fileContents = fileData.split(SEPARATOR, 2);
         File file = initializeFile(fileContents[0]);
-        writeToFile(file, fileContents[1]);
+        while(true) {
+            String data = getMessageData(serveChannel);
+            if(!data.equals(SEPARATOR)) {
+                writeToFile(file, data);
+            } else {
+                break;
+            }
+        }
         respondToClient(SUCCESS);
     }
 
@@ -150,9 +157,12 @@ public class ServerTCP extends TCPProcessor implements TCP {
     }
 
     private void writeFileToClient(File file) throws IOException {
-        for (int i = 0; i < file.length(); i += MAX_TRANSFER_SIZE) {
-            serveChannel.write(ByteBuffer.wrap(readFromFile(file, i).getBytes()));
+        char[] readData = new char[MAX_TRANSFER_SIZE];
+        BufferedReader reader = new BufferedReader(new FileReader(file));
+        while(reader.read(readData, 0, MAX_TRANSFER_SIZE) != -1) {
+            serveChannel.write(ByteBuffer.wrap(new String(readData).getBytes()));
         }
         serveChannel.write(ByteBuffer.wrap(SEPARATOR.getBytes()));
+        respondToClient(SUCCESS);
     }
 }

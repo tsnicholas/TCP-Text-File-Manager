@@ -12,16 +12,8 @@ public abstract class TCPProcessor implements TCP {
         return new String(buffer.array()).replace("\0", "");
     }
 
-    public String readFromFile(File file, int i) throws IOException {
-        char[] readData = new char[MAX_TRANSFER_SIZE];
-        BufferedReader reader = new BufferedReader(new FileReader(file));
-        System.out.println("Uploading " +
-                reader.read(readData, i, i + MAX_TRANSFER_SIZE) + " characters...");
-        return new String(readData);
-    }
-
     public void writeToFile(File file, String content) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+        BufferedWriter writer = new BufferedWriter(new FileWriter(file, true));
         writer.write(content);
         writer.close();
     }
