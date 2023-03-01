@@ -74,7 +74,7 @@ public class ClientTCP extends TCPProcessor implements TCP {
 
     private void printResponse(String responseCode) {
         switch(responseCode) {
-            case "S" -> System.out.println("Operation Successful.");
+            case SUCCESS -> System.out.println("Operation Successful.");
             case FAILURE -> System.out.println("Operation Failed.");
             default -> System.out.println("Unknown response from server.");
         }
@@ -86,23 +86,15 @@ public class ClientTCP extends TCPProcessor implements TCP {
         if(!file.exists()) {
             System.out.println(DEFAULT_FILE_DOES_NOT_EXIST_MSG);
         } else {
-            writeFileToServer(file);
+            uploadFileToServer(file);
         }
         sc.close();
     }
 
-    private void writeFileToServer(File file) throws IOException {
-        char[] readData = new char[MAX_TRANSFER_SIZE];
-        BufferedReader reader = new BufferedReader(new FileReader(file));
-        String uploadData = UPLOAD + file.getName() + SEPARATOR;
+    private void uploadFileToServer(File file) throws IOException {
+        String uploadData = UPLOAD + file.getName();
         sc.write(ByteBuffer.wrap(uploadData.getBytes()));
-        while(reader.read(readData, 0, MAX_TRANSFER_SIZE) != -1) {
-            String data = new String(readData);
-            sc.write(ByteBuffer.wrap(data.getBytes()));
-        }
-        sc.write(ByteBuffer.wrap(SEPARATOR.getBytes()));
-        String responseCode = getMessageData(sc);
-        printResponse(responseCode);
+        printResponse(transferFile(sc, file));
     }
 
     private void downloadFile() throws IOException {
@@ -115,6 +107,7 @@ public class ClientTCP extends TCPProcessor implements TCP {
         }
         initializeDownload(file);
         getFileContents(file);
+        sc.close();
     }
 
     private void initializeDownload(File file) throws IOException {
@@ -129,14 +122,7 @@ public class ClientTCP extends TCPProcessor implements TCP {
     private void getFileContents(File file) throws IOException {
         String serverMsg = DOWNLOAD + file.getName();
         sc.write(ByteBuffer.wrap(serverMsg.getBytes()));
-        while(true) {
-            String data = getMessageData(sc);
-            if(!data.equals(SEPARATOR)) {
-                writeToFile(file, data);
-            } else {
-                break;
-            }
-        }
+        receiveFile(sc, file);
         printResponse(getMessageData(sc));
     }
 }

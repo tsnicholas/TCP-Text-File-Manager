@@ -28,8 +28,7 @@ public class ServerTCP extends TCPProcessor implements TCP {
     }
 
     private void initializeDirectory() {
-        String dir = System.getProperty("user.dir");
-        serverDirectory = new File(dir + "\\ServerDirectory");
+        serverDirectory = new File(System.getProperty("user.dir") + "\\ServerDirectory");
         if(!serverDirectory.exists()) {
             if(serverDirectory.mkdir()) {
                 System.out.println("Directory successfully created!");
@@ -118,17 +117,9 @@ public class ServerTCP extends TCPProcessor implements TCP {
         serveChannel.write(buffer);
     }
 
-    private void retrieveUpload(String fileData) throws IOException {
-        String[] fileContents = fileData.split(SEPARATOR, 2);
-        File file = initializeFile(fileContents[0]);
-        while(true) {
-            String data = getMessageData(serveChannel);
-            if(!data.equals(SEPARATOR)) {
-                writeToFile(file, data);
-            } else {
-                break;
-            }
-        }
+    private void retrieveUpload(String fileName) throws IOException {
+        File file = initializeFile(fileName);
+        receiveFile(serveChannel, file);
         respondToClient(SUCCESS);
     }
 
@@ -136,9 +127,9 @@ public class ServerTCP extends TCPProcessor implements TCP {
         File file = new File(serverDirectory.getAbsolutePath() + SLASH + fileName);
         if(!file.exists()) {
             if(file.createNewFile()) {
-                System.out.println("New file has been created :)");
+                System.out.println("New file has been created.");
             } else {
-                System.out.println("Failed to create file. :(");
+                System.out.println("Failed to create file.");
                 respondToClient(FAILURE);
                 throw new IOException();
             }
@@ -146,23 +137,13 @@ public class ServerTCP extends TCPProcessor implements TCP {
         return file;
     }
 
-    private void downloadFile(String fileData) throws IOException {
-        File file = new File(serverDirectory.getAbsolutePath() + SLASH + fileData);
+    private void downloadFile(String fileName) throws IOException {
+        File file = new File(serverDirectory.getAbsolutePath() + SLASH + fileName);
         if (!file.exists()) {
             System.out.println(DEFAULT_FILE_DOES_NOT_EXIST_MSG);
             respondToClient(FAILURE);
         } else {
-            writeFileToClient(file);
+            respondToClient(transferFile(serveChannel, file));
         }
-    }
-
-    private void writeFileToClient(File file) throws IOException {
-        char[] readData = new char[MAX_TRANSFER_SIZE];
-        BufferedReader reader = new BufferedReader(new FileReader(file));
-        while(reader.read(readData, 0, MAX_TRANSFER_SIZE) != -1) {
-            serveChannel.write(ByteBuffer.wrap(new String(readData).getBytes()));
-        }
-        serveChannel.write(ByteBuffer.wrap(SEPARATOR.getBytes()));
-        respondToClient(SUCCESS);
     }
 }
